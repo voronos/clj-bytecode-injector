@@ -20,12 +20,12 @@
   (str \" arg \"))
 (defmethod quote-arg clojure.lang.PersistentList$EmptyList
   [values arg] "()")
-(defmethod quote-arg ::collection [values arg]
-  (map #(quote-arg values %) arg))
 (defmethod quote-arg clojure.lang.PersistentVector [values arg]
   (quote-arg values (values (first arg))))
+(defmethod quote-arg clojure.lang.PersistentList [values arg]
+  (str "(" (apply str (map #(quote-arg values %) arg)) ")"))
 
-;;; This is sooooo close. I just need to evaluate the forms within the args vector.
+
 (defmacro to-java-code
   ([args & body]
      `(str
@@ -34,33 +34,41 @@
        (interpose " " (map #(quote-arg ~args %) '(~@body))))
       \;)))
 
-
 (defn insert-start-time [ctMethod local-var]
   (doto ctMethod
     (.addLocalVariable (str local-var) CtClass/longType)
-    (.insertBefore (str local-var "=System.currentTimeMillis();" ))))
+    (.insertBefore (to-java-code
+                    [local-var] [0] = System.currentTimeMillis ()))))
 
 (defn escape-output [args]
   (apply str  (interpose "+" (map quote-arg args))))
 
-(defn append-output [ctMethod & args]
-  (doto ctMethod
-    (.insertAfter
-     (str "System.out.println("
-          (escape-output ["[" (.getName (.getDeclaringClass ctMethod)) "]"
-                          "[" (.getName ctMethod) "]"])
-          " "
-          (escape-output args)
-          ");"))))
+;; (defn append-output [ctMethod & args]
+;;   (.insertAfter ctMethod (to-java-code [(.getName (.getDeclaringClass ctMethod))
+;;                                         (.getName ctMethod)]
+;;                                        System.out.print ("["+ [0]+ "][" + [1] + "]")))
+;;   (.insertAfter
+;;    ctMethod
+;;    (to-java-code []
+;;                  System.out.println (args))
+;;    ;; (str "System.out.println("
+;;    ;;      (escape-output ["[" (.getName (.getDeclaringClass ctMethod)) "]"
+;;    ;;                      "[" (.getName ctMethod) "]"])
+;;    ;;      " "
+;;    ;;      (escape-output args)
+;;    ;;      ");")
+;;    ))
 
 (defn add-time-profile [ctMethod]
   (let [local-var (gensym)]
-    (insert-start-time ctMethod local-var)
-    (append-output ctMethod "start time = " local-var)
-    (append-output ctMethod "end time = " '(System.currentTimeMillis()))
-    (.insertAfter ctMethod (str "System.out.println(\"Total time = \" +"
-                                "(System.currentTimeMillis() - " local-var
-                                "));"))))
+    ;(insert-start-time ctMethod local-var)
+    (doto ctMethod
+      (insert-start-time local-var)
+      (.insertAfter (to-java-code [local-var] System.out.println("start time = " + [0])))
+      (.insertAfter (to-java-code ['(System.currentTimeMillis())] System.out.println("end time = " + [0])))
+      (.insertAfter
+       (to-java-code ['(System.currentTimeMillis()) local-var]
+                     System.out.println("Total time = " + ([0] - [1])))))))
 
 (defn -main [& args]
   (doseq [class-name args]
