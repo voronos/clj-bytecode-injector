@@ -25,13 +25,13 @@
 (defmethod quote-arg clojure.lang.PersistentVector [values arg]
   (quote-arg values (values (first arg))))
 
-;;; This is sooooo close. I just need to evaluate args.
+;;; This is sooooo close. I just need to evaluate the forms within the args vector.
 (defmacro to-java-code
   ([args & body]
-     (str
+     `(str
       (apply
        str
-       (interpose " " (map #(quote-arg args %) body)))
+       (interpose " " (map #(quote-arg ~args %) '(~@body))))
       \;)))
 
 
