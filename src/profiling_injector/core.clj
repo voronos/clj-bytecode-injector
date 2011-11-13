@@ -17,15 +17,43 @@
 ;;; (call-println "This value = " x " and the time is " (new Date()))
 ;;; which should produce "System.out.println(\"This value = \" + x + \"and the time is \" + (new Date()))"
 ;;; TODO abandoning for now, but soon
-(defmacro call-println [& body]
-  `(str 'System.out.println \( \) \;))
+;;; This needs to return a string of code. which means replacing any " in body with \" and \ with \\
+(defmacro inject-code [& body]
+  `(str (clojure.string/escape ~@body {\\ "\\" \" "\""})))
+  ;; `(str 'System.out.println \( \) \;))
+
+(defn insert-start-time [ctMethod local-var]
+  (doto ctMethod
+    (.addLocalVariable (str local-var) CtClass/longType)
+    (.insertBefore (str local-var "=System.currentTimeMillis();" ))))
+
+(defmulti quote-arg class)
+(defmethod quote-arg :default [arg]
+  arg)
+(defmethod quote-arg String [arg]
+  (str \" arg \"))
+
+(defn escape-output [args]
+  (apply str  (interpose "+" (map quote-arg args))))
+
+(defn append-output [ctMethod & args]
+  (doto ctMethod
+    (.insertAfter
+     (str "System.out.println("
+          (escape-output ["[" (.getName (.getDeclaringClass ctMethod)) "]"
+                          "[" (.getName ctMethod) "]"])
+          " "
+          (escape-output args)
+          ");"))))
 
 (defn add-time-profile [ctMethod]
   (let [local-var (gensym)]
-    (doto ctMethod
-      (.addLocalVariable (str local-var) CtClass/longType)
-      (.insertBefore (str local-var "=System.currentTimeMillis();" ))
-      (.insertAfter (str "System.out.println(\"local-var =\" + " local-var ");")))))
+    (insert-start-time ctMethod local-var)
+    (append-output ctMethod "start time = " local-var)
+    (append-output ctMethod "end time = " '(System.currentTimeMillis()))
+    (.insertAfter ctMethod (str "System.out.println(\"Total time = \" +"
+                                "(System.currentTimeMillis() - " local-var
+                                "));"))))
 
 (defn -main [& args]
   (doseq [class-name args]
