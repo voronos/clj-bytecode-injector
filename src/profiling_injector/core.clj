@@ -13,25 +13,32 @@
 (defn find-methods-like [name-regex ctClass]
   (filter #(re-find name-regex (.getName %)) (get-methods ctClass)))
 
-;;; This might be a macro, because what I want is going to be
-;;; (call-println "This value = " x " and the time is " (new Date()))
-;;; which should produce "System.out.println(\"This value = \" + x + \"and the time is \" + (new Date()))"
-;;; TODO abandoning for now, but soon
-;;; This needs to return a string of code. which means replacing any " in body with \" and \ with \\
-(defmacro inject-code [& body]
-  `(str (clojure.string/escape ~@body {\\ "\\" \" "\""})))
-  ;; `(str 'System.out.println \( \) \;))
+(defmulti quote-arg (fn [values arg] (class arg)))
+(defmethod quote-arg :default [values arg]
+  arg)
+(defmethod quote-arg String [values arg]
+  (str \" arg \"))
+(defmethod quote-arg clojure.lang.PersistentList$EmptyList
+  [values arg] "()")
+(defmethod quote-arg ::collection [values arg]
+  (map #(quote-arg values %) arg))
+(defmethod quote-arg clojure.lang.PersistentVector [values arg]
+  (quote-arg values (values (first arg))))
+
+;;; This is sooooo close. I just need to evaluate args.
+(defmacro to-java-code
+  ([args & body]
+     (str
+      (apply
+       str
+       (interpose " " (map #(quote-arg args %) body)))
+      \;)))
+
 
 (defn insert-start-time [ctMethod local-var]
   (doto ctMethod
     (.addLocalVariable (str local-var) CtClass/longType)
     (.insertBefore (str local-var "=System.currentTimeMillis();" ))))
-
-(defmulti quote-arg class)
-(defmethod quote-arg :default [arg]
-  arg)
-(defmethod quote-arg String [arg]
-  (str \" arg \"))
 
 (defn escape-output [args]
   (apply str  (interpose "+" (map quote-arg args))))
