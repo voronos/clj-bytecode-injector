@@ -1,5 +1,6 @@
 (ns profiling-injector.core
   (:gen-class)
+  (:require (profiling-injector analyze))
   (:import (javassist ClassPool CtClass CtMethod)))
 
 (defn get-class
@@ -25,7 +26,6 @@
 (defmethod quote-arg clojure.lang.PersistentList [values arg]
   (str "(" (apply str (map #(quote-arg values %) arg)) ")"))
 
-
 (defmacro to-java-code
   ([args & body]
      `(str
@@ -43,32 +43,15 @@
 (defn escape-output [args]
   (apply str  (interpose "+" (map quote-arg args))))
 
-;; (defn append-output [ctMethod & args]
-;;   (.insertAfter ctMethod (to-java-code [(.getName (.getDeclaringClass ctMethod))
-;;                                         (.getName ctMethod)]
-;;                                        System.out.print ("["+ [0]+ "][" + [1] + "]")))
-;;   (.insertAfter
-;;    ctMethod
-;;    (to-java-code []
-;;                  System.out.println (args))
-;;    ;; (str "System.out.println("
-;;    ;;      (escape-output ["[" (.getName (.getDeclaringClass ctMethod)) "]"
-;;    ;;                      "[" (.getName ctMethod) "]"])
-;;    ;;      " "
-;;    ;;      (escape-output args)
-;;    ;;      ");")
-;;    ))
-
 (defn add-time-profile [ctMethod]
-  (let [local-var (gensym)]
-    ;(insert-start-time ctMethod local-var)
+  (let [local-var (gensym)
+        class-name (.getName (.getDeclaringClass ctMethod))
+        method-name (.getName ctMethod)]
     (doto ctMethod
       (insert-start-time local-var)
-      (.insertAfter (to-java-code [local-var] System.out.println("start time = " + [0])))
-      (.insertAfter (to-java-code ['(System.currentTimeMillis())] System.out.println("end time = " + [0])))
       (.insertAfter
-       (to-java-code ['(System.currentTimeMillis()) local-var]
-                     System.out.println("Total time = " + ([0] - [1])))))))
+       (to-java-code [class-name method-name local-var]
+                     System.out.println("[" + [0] + "] [" + [1] + "] " + (System.currentTimeMillis() - [2])))))))
 
 (defn -main [& args]
   (doseq [class-name args]
