@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="profiling-injector" default="compile-samples" basedir=".">
+  <target name="compile-samples">
+    <mkdir dir="sample-classes"/>
+    <javac srcdir="." destdir="sample-classes" includeantruntime="false"></javac>
+  </target>
+
+  <target name="modify-samples" depends="compile-samples">
+    <java classname="Sample">
+      <classpath>
+	<dirset dir="sample-classes"/>
+      </classpath>
+    </java>
+    <echo>Modifying classes</echo>
+    <java jar="profiling-injector-1.0.0-SNAPSHOT-standalone.jar" fork="true">
+      <arg value="sample-classes"/>
+      <arg value="Sample"/>
+      <arg value="SleepyClass"/>
+      <arg value="tmp.PackagedSample"/>
+    </java>
+
+    <java classname="Sample">
+      <classpath>
+	<dirset dir="sample-classes"/>
+      </classpath>
+    </java>
+  </target>
+
+  <target name="lein-jar">
+    <exec executable="C:/usr/bin/sh.exe">
+      <arg value="C:/cygwin/usr/local/bin/lein"/>
+      <arg value="jar"/>
+    </exec>
+  </target>
+</project>

@@ -1,12 +1,12 @@
 (ns profiling-injector.core
   (:gen-class)
-  (:require (profiling-injector analyze))
   (:import (javassist ClassPool CtClass CtMethod)))
 
+(def classPool (ClassPool/getDefault))
 (defn get-class
   "Returns a CtClass object for the fully qualified class name"
   [^:String class-name]
-  (.. (ClassPool/getDefault) (get class-name)))
+  (.. classPool (get class-name)))
 
 (defn get-methods [ctClass]
   (.getDeclaredMethods ctClass))
@@ -53,10 +53,13 @@
        (to-java-code [class-name method-name local-var]
                      System.out.println("[" + [0] + "] [" + [1] + "] " + (System.currentTimeMillis() - [2])))))))
 
-(defn -main [& args]
+(defn -main
+  "Appends a directory to the default search path and adds logging calls to the specified classes in the path"
+  [class-base-dir & args]
+  (.appendClassPath classPool class-base-dir)
   (doseq [class-name args]
     (let [ct-class (get-class class-name)]
       (doseq [method (get-methods ct-class)]
-        (println "modifying method " (.getName method))
+        (println "modifying method " (.getName ct-class) (.getName method))
         (add-time-profile method))
-      (.writeFile ct-class))))
+      (.writeFile ct-class class-base-dir))))

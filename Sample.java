@@ -6,6 +6,7 @@ public class Sample {
 	sleeper();
 	sleeper();
 	SleepyClass.expensiveOp();
+	tmp.PackagedSample.printSomething();
     }
 
     public static void sleeper() throws Exception{
