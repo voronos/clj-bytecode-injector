@@ -1,12 +1,13 @@
 (ns profiling-injector.core
   (:gen-class)
-  (:import (javassist ClassPool CtClass CtMethod)))
+  (:import (javassist ClassPool CtClass CtMethod)
+	   (java.io File)))
 
 (def classPool (ClassPool/getDefault))
 (defn get-class
   "Returns a CtClass object for the fully qualified class name"
   [^:String class-name]
-  (.. classPool (get class-name)))
+  (.get classPool class-name))
 
 (defn get-methods [ctClass]
   (.getDeclaredMethods ctClass))
@@ -53,11 +54,24 @@
        (to-java-code [class-name method-name local-var]
                      System.out.println("[" + [0] + "] [" + [1] + "] " + (System.currentTimeMillis() - [2])))))))
 
+(defn construct-path [dir-file file-name]
+  (str (.getPath dir-file) "/" file-name))
+
+(defn file->class-name [base-dir file]
+  (-> file (.getPath) (.replaceAll "\\.class" "") (.replaceAll (str base-dir File/separatorChar) "") (.replace File/separatorChar \.)))
+
+(defn find-classes [base-dir]
+  (filter #(.contains (.getName %) ".class")
+	  (tree-seq #(.isDirectory %) #(map
+					(fn [file-name] (File. (construct-path % file-name)))
+					(.list %))
+		    (File. base-dir))))
+
 (defn -main
   "Appends a directory to the default search path and adds logging calls to the specified classes in the path"
   [class-base-dir & args]
   (.appendClassPath classPool class-base-dir)
-  (doseq [class-name args]
+  (doseq [class-name (map (partial file->class-name class-base-dir) (find-classes class-base-dir))]
     (let [ct-class (get-class class-name)]
       (doseq [method (get-methods ct-class)]
         (println "modifying method " (.getName ct-class) (.getName method))
