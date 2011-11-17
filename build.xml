@@ -13,11 +13,12 @@
       </classpath>
     </java>
     <echo>Modifying classes</echo>
-    <java jar="profiling-injector-1.0.0-SNAPSHOT-standalone.jar" fork="true">
+    <java classname="profiling_injector.core" fork="true" failonerror="true">
       <arg value="sample-classes"/>
-      <arg value="Sample"/>
-      <arg value="SleepyClass"/>
-      <arg value="tmp.PackagedSample"/>
+      <classpath>
+	<dirset dir="sample-classes"/>
+	<path location="profiling-injector-1.0.0-SNAPSHOT-standalone.jar"/>
+      </classpath>
     </java>
 
     <java classname="Sample">
