@@ -1,0 +1,13 @@
+<!-- add the following ant task to jmeSprint.compile, after the make call -->
+
+<java failonerror="true" fork="true" classname="profiling_injector.core">
+  <classpath>
+    <path refid="jmeSprint.main.class.path"/>
+    <path refid="jmeSprint.boot.class.path"/>
+    <path>
+      <pathelement location="profiling-injector-1.0.0-SNAPSHOT-standalone.jar"/>
+      <dirset dir="${jmeSprint.main.classes.out.dir}"/>
+    </path>
+  </classpath>
+  <arg value="${jmeSprint.main.classes.out.dir}"/>
+</java>
