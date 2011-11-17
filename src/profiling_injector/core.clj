@@ -52,13 +52,13 @@
       (insert-start-time local-var)
       (.insertAfter
        (to-java-code [class-name method-name local-var]
-                     System.out.println("[" + [0] + "] [" + [1] + "] " + (System.currentTimeMillis() - [2])))))))
+                     System.out.println([0] + "/" + [1] + "/" + (System.currentTimeMillis() - [2])))))))
 
 (defn construct-path [dir-file file-name]
   (str (.getPath dir-file) "/" file-name))
 
 (defn file->class-name [base-dir file]
-  (-> file (.getPath) (.replaceAll "\\.class" "") (.replaceAll (str base-dir File/separatorChar) "") (.replace File/separatorChar \.)))
+  (-> file (.getPath) (.replace File/separatorChar \.) (.replace (str base-dir \.) "") (.replace ".class" "")))
 
 (defn find-classes [base-dir]
   (filter #(.contains (.getName %) ".class")
