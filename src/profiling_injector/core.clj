@@ -78,8 +78,13 @@
   (println "Searching " class-base-dir " for classes")
   (doseq [class-name (map (partial file->class-name class-base-dir) (find-classes class-base-dir))]
     (let [ct-class (get-class class-name)]
-      (when (not (.isInterface ct-class))
+      (when-not (.isInterface ct-class)
 	(doseq [method (get-methods ct-class)]
-	  (println "modifying method " (.getName ct-class) (.getName method))
-	  (add-time-profile method)))
+	  (try
+	    (when-not (.isEmpty method)
+	      (add-time-profile method))
+	    (catch Exception e
+	      (.printStackTrace e)
+	      (printf "Class = %s\nmethod = %s" ct-class method)
+	      (System/exit 2)))))
       (.writeFile ct-class class-base-dir))))
