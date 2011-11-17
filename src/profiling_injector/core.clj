@@ -87,4 +87,5 @@
 	      (.printStackTrace e)
 	      (printf "Class = %s\nmethod = %s" ct-class method)
 	      (System/exit 2)))))
-      (.writeFile ct-class class-base-dir))))
+      (.writeFile ct-class class-base-dir)))
+  (println "Finished editing classes"))
