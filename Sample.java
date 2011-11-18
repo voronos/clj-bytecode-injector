@@ -7,6 +7,7 @@ public class Sample {
 	sleeper();
 	SleepyClass.expensiveOp();
 	tmp.PackagedSample.printSomething();
+	tmp.PackagedSample.Foo.printFoo();
     }
 
     public static void sleeper() throws Exception{

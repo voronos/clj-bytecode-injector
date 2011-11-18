@@ -52,7 +52,7 @@
       (insert-start-time local-var)
       (.insertAfter
        (to-java-code [class-name method-name local-var]
-                     System.out.println([0] + "/" + [1] + "/" + (System.currentTimeMillis() - [2])))))))
+		     com.xora.device.util.StandardLogProvider.profile([0] + "/" + [1] + "/" + (System.currentTimeMillis() - [2])))))))
 
 (defn construct-path [dir-file file-name]
   (str (.getPath dir-file) "/" file-name))
@@ -74,10 +74,10 @@
   calls to the specified classes in the path. Make sure the ant task
   is forked and that the class path contains everything you will need
   to load"
-  [class-base-dir & args]
+  [class-base-dir & exclude-classes]
   (println "Searching " class-base-dir " for classes")
-  (doseq [class-name (map (partial file->class-name class-base-dir) (find-classes class-base-dir))]
-    (let [ct-class (get-class class-name)]
+  (doseq [class-name (filter (comp not (set exclude-classes)) (map (partial file->class-name class-base-dir) (find-classes class-base-dir)))]
+    (when-let [ct-class (get-class class-name)]
       (when-not (.isInterface ct-class)
 	(doseq [method (get-methods ct-class)]
 	  (try
