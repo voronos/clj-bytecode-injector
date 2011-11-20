@@ -1,6 +1,8 @@
 # profiling-injector
 
-FIXME: write description
+I needed a way to add profiling information to a J2ME
+project, and since there is no way to attach a profiler to a phone
+I thought I would try to see if I can add something after the compilation phase.
 
 ## Usage
 
